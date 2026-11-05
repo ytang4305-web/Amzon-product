@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Product Testing Program</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --primary: #4F46E5;
+    --primary-hover: #4338CA;
+    --bg: #F3F4F6;
+    --surface: #FFFFFF;
+    --text-main: #111827;
+    --text-muted: #6B7280;
+    --border: #E5E7EB;
+    --success: #10B981;
+    --warning: #F59E0B;
+    --danger: #EF4444;
+  }
+  * { box-sizing: border-box; }
+  body { 
+    font-family: 'Inter', system-ui, -apple-system, sans-serif; 
+    margin: 0; 
+    padding: 0; 
+    background-color: var(--bg); 
+    color: var(--text-main);
+    -webkit-font-smoothing: antialiased;
+  }
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 20px 0;
+    text-align: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  }
+  .header h1 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--primary);
+    letter-spacing: -0.5px;
+  }
+  .container { 
+    max-width: 680px; 
+    margin: 40px auto; 
+    padding: 0 20px; 
+  }
+  .card { 
+    background: var(--surface); 
+    border-radius: 16px; 
+    padding: 32px; 
+    margin-bottom: 24px; 
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    border: 1px solid var(--border);
+  }
+  .card h3 { 
+    margin-top: 0; 
+    margin-bottom: 20px;
+    font-size: 18px;
+    font-weight: 600;
+  }
+  label { 
+    display: block; 
+    margin: 16px 0 6px; 
+    font-size: 14px; 
+    font-weight: 500; 
+    color: var(--text-main); 
+  }
+  input, select { 
+    width: 100%; 
+    padding: 12px 14px; 
+    border: 1px solid var(--border); 
+    border-radius: 8px; 
+    font-size: 15px;
+    font-family: inherit;
+    transition: all 0.2s;
+    background-color: #F9FAFB;
+  }
+  input:focus, select:focus {
+    outline: none;
+    border-color: var(--primary);
+    background-color: #fff;
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+  }
+  .product-item { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    padding: 16px 0; 
+    border-bottom: 1px solid var(--border); 
+  }
+  .product-item:last-child { border-bottom: none; }
+  .product-info { display: flex; align-items: center; gap: 12px; }
+  .product-name { font-weight: 600; font-size: 16px; }
+  .status { 
+    font-size: 12px; 
+    font-weight: 600;
+    padding: 4px 10px; 
+    border-radius: 20px; 
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .open { background:#ECFDF5; color:var(--success); }
+  .coming_soon { background:#FFFBEB; color:var(--warning); }
+  .out_of_stock { background:#FEF2F2; color:var(--danger); }
+  
+  button { 
+    padding: 10px 20px; 
+    border: none; 
+    border-radius: 8px; 
+    background: var(--primary); 
+    color: #fff; 
+    font-weight: 500;
+    font-size: 14px;
+    cursor: pointer; 
+    transition: all 0.2s;
+  }
+  button:hover:not(:disabled) { background: var(--primary-hover); transform: translateY(-1px); }
+  button:disabled { background: #D1D5DB; cursor: not-allowed; color: #6B7280; }
+  .btn-submit { width: 100%; padding: 14px; font-size: 16px; margin-top: 10px; }
+  
+  .notice { 
+    font-size: 14px; 
+    color: var(--text-muted); 
+    line-height: 1.6; 
+    background: #F8FAFC;
+    padding: 16px;
+    border-radius: 8px;
+    border-left: 4px solid var(--primary);
+    margin-bottom: 20px;
+  }
+  .chat-box { 
+    height: 300px; 
+    overflow-y: auto; 
+    border: 1px solid var(--border); 
+    border-radius: 12px; 
+    padding: 16px; 
+    background: #F9FAFB; 
+    margin-bottom: 16px; 
+  }
+  .msg { 
+    margin: 8px 0; 
+    padding: 10px 16px; 
+    border-radius: 16px; 
+    max-width: 80%; 
+    font-size: 14px; 
+    line-height: 1.5;
+    word-wrap: break-word;
+  }
+  .msg.buyer { background: var(--primary); color: #fff; margin-left: auto; border-bottom-right-radius: 4px; }
+  .msg.admin { background: #E5E7EB; color: var(--text-main); border-bottom-left-radius: 4px; }
+  .hidden { display: none !important; }
+  
+  .input-group { display: flex; gap: 8px; }
+  .input-group input { flex: 1; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Product Testing Program</h1>
+</div>
+
+<div class="container">
+  <div id="step1">
+    <div class="card">
+      <h3>Personal Information</h3>
+      <label>Full Name</label>
+      <input id="name" placeholder="e.g. John Doe">
+      <label>Country</label>
+      <select id="country">
+        <option value="US">United States (US)</option>
+        <option value="CA">Canada (CA)</option>
+        <option value="UK">United Kingdom (UK)</option>
+        <option value="DE">Germany (DE)</option>
+        <option value="FR">France (FR)</option>
+        <option value="JP">Japan (JP)</option>
+        <option value="AU">Australia (AU)</option>
+        <option value="OTHER">Other</option>
+      </select>
+      <label>PayPal Email</label>
+      <input id="paypal" placeholder="For receiving refunds">
+      <label>Amazon Profile Link</label>
+      <input id="amazon" placeholder="https://www.amazon.com/...">
+    </div>
+
+    <div class="card">
+      <h3>Available Products</h3>
+      <div id="productList"></div>
+    </div>
+
+    <div class="card">
+      <p class="notice">
+        <b>How it works:</b><br>
+        1. Apply for a product.<br>
+        2. Once approved, purchase the item on Amazon.<br>
+        3. Complete the test and submit your review.<br>
+        4. Get a <b>100% full refund</b> via PayPal.
+      </p>
+      <button id="submitBtn" class="btn-submit" onclick="submitApply()">Submit Application</button>
+      <p id="submitMsg" style="text-align:center; margin-top:12px; font-weight:500; font-size:14px;"></p>
+    </div>
+  </div>
+
+  <div id="step2" class="hidden">
+    <div class="card" style="text-align:center;">
+      <h3 style="color:var(--success); margin-bottom:8px;">Application Submitted 🎉</h3>
+      <p style="font-size:15px; color:var(--text-muted);">Application ID: <b id="appId" style="color:var(--text-main);"></b></p>
+      <p id="statusText" style="display:inline-block; padding:6px 16px; background:#FEF3C7; color:#D97706; border-radius:20px; font-weight:600; font-size:14px;">Status: Pending Review</p>
+    </div>
+    
+    <div class="card">
+      <h3>Chat with Admin</h3>
+      <div id="chatBox" class="chat-box"></div>
+      <div class="input-group">
+        <input id="chatInput" placeholder="Type your message here..." onkeypress="if(event.key === 'Enter') sendMsg()">
+        <button onclick="sendMsg()">Send</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+let selectedProduct = null;
+let socket = null;
+let currentAppId = null;
+
+async function loadProducts() {
+  const res = await fetch('/api/products');
+  const products = await res.json();
+  const country = document.getElementById('country').value;
+  const list = document.getElementById('productList');
+  list.innerHTML = '';
+  selectedProduct = null;
+
+  products.forEach(p => {
+    const allowed = p.allowed_countries === 'ALL'
+      || p.allowed_countries.split(',').map(s=>s.trim()).includes(country);
+    let text = 'Apply Now', disabled = false;
+    if (p.stock_status === 'out_of_stock') { text = 'Out of Stock'; disabled = true; }
+    else if (p.stock_status === 'coming_soon') { text = 'Coming Soon'; disabled = true; }
+    else if (!allowed) { text = 'Not available in your region'; disabled = true; }
+
+    const statusMap = { open:'Open', coming_soon:'Coming Soon', out_of_stock:'Out of Stock' };
+    
+    let displayName = p.name;
+    if (p.name === '脱毛仪') displayName = 'Laser Hair Removal Device';
+    if (p.name === '美容仪') displayName = 'Facial Beauty Device';
+    if (p.name === '燃脂按摩仪') displayName = 'Fat Burning Massager';
+
+    const div = document.createElement('div');
+    div.className = 'product-item';
+    div.innerHTML = `
+      <div class="product-info">
+        <span class="product-name">${displayName}</span>
+        <span class="status ${p.stock_status}">${statusMap[p.stock_status]}</span>
+      </div>
+      <button ${disabled?'disabled':''} onclick="selectProduct(${p.id}, this)">${text}</button>
+    `;
+    list.appendChild(div);
+  });
+}
+
+function selectProduct(id, btn) {
+  selectedProduct = id;
+  document.querySelectorAll('#productList button').forEach(b => {
+    if(b.innerText !== 'Out of Stock' && b.innerText !== 'Coming Soon') {
+      b.style.background = 'var(--primary)';
+      b.innerText = 'Apply Now';
+    }
+  });
+  btn.style.background = 'var(--success)';
+  btn.innerText = 'Selected ✓';
+}
+
+document.getElementById('country').addEventListener('change', loadProducts);
+loadProducts();
+
+async function submitApply() {
+  const name = document.getElementById('name').value.trim();
+  const country = document.getElementById('country').value;
+  const paypal = document.getElementById('paypal').value.trim();
+  const amazon = document.getElementById('amazon').value.trim();
+  const msg = document.getElementById('submitMsg');
+
+  if (!name || !paypal || !amazon) { msg.textContent = 'Please fill in all fields.'; msg.style.color='var(--danger)'; return; }
+  if (!selectedProduct) { msg.textContent = 'Please select a product.'; msg.style.color='var(--danger)'; return; }
+
+  msg.textContent = 'Submitting...'; msg.style.color='var(--text-muted)';
+
+  const res = await fetch('/api/apply', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, country, paypal, amazon_profile: amazon, product_id: selectedProduct })
+  });
+  const data = await res.json();
+  if (data.error) { msg.textContent = data.error; msg.style.color='var(--danger)'; return; }
+
+  currentAppId = data.applicationId;
+  document.getElementById('appId').textContent = currentAppId;
+  document.getElementById('step1').classList.add('hidden');
+  document.getElementById('step2').classList.remove('hidden');
+
+  initChat();
+}
+
+function initChat() {
+  socket = io();
+  socket.emit('join', currentAppId);
+
+  fetch(`/api/application/${currentAppId}`).then(r=>r.json()).then(data => {
+    updateStatusText(data.application.status);
+    data.messages.forEach(m => appendMsg(m.sender, m.content));
+  });
+
+  socket.on('message', m => {
+    if (m.application_id === currentAppId) appendMsg(m.sender, m.content);
+  });
+  socket.on('notification', n => {
+    updateStatusText(n.type);
+  });
+}
+
+function updateStatusText(status) {
+  const el = document.getElementById('statusText');
+  if (status === 'pending') {
+    el.textContent = 'Status: Pending Review';
+    el.style.background = '#FEF3C7'; el.style.color = '#D97706';
+  } else if (status === 'approved') {
+    el.textContent = 'Status: Approved ✅';
+    el.style.background = '#ECFDF5'; el.style.color = 'var(--success)';
+  } else if (status === 'rejected') {
+    el.textContent = 'Status: Rejected ❌';
+    el.style.background = '#FEF2F2'; el.style.color = 'var(--danger)';
+  }
+}
+
+function appendMsg(sender, content) {
+  const box = document.getElementById('chatBox');
+  const div = document.createElement('div');
+  div.className = 'msg ' + sender;
+  div.textContent = (sender === 'admin' ? 'Admin: ' : 'You: ') + content;
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+}
+
+function sendMsg() {
+  const input = document.getElementById('chatInput');
+  const content = input.value.trim();
+  if (!content) return;
+  socket.emit('message', { applicationId: currentAppId, sender: 'buyer', content });
+  input.value = '';
+}
+</script>
+</body>
+</html>
