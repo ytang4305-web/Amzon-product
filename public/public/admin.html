@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Dashboard</title>
+<style>
+  body { font-family: system-ui, sans-serif; margin:0; background:#f0f2f5; }
+  .login { max-width:360px; margin:100px auto; background:#fff; padding:24px; border-radius:10px; }
+  .layout { display:flex; height:100vh; }
+  .sidebar { width:360px; background:#fff; border-right:1px solid #e5e7eb; overflow-y:auto; }
+  .main { flex:1; display:flex; flex-direction:column; }
+  .header { padding:14px 20px; background:#fff; border-bottom:1px solid #e5e7eb; font-weight:600; display:flex; justify-content:space-between; align-items:center;}
+  .app-item { padding:12px 16px; border-bottom:1px solid #f0f0f0; cursor:pointer; font-size:14px; }
+  .app-item:hover, .app-item.active { background:#eff6ff; }
+  .badge { font-size:11px; padding:2px 7px; border-radius:10px; margin-left:6px; }
+  .pending { background:#fff7e6; color:#ad6800; }
+  .approved { background:#e6f7e6; color:#1a7f1a; }
+  .rejected { background:#ffe6e6; color:#c00; }
+  .chat-area { flex:1; display:flex; flex-direction:column; padding:16px; }
+  .chat-box { flex:1; overflow-y:auto; border:1px solid #ddd; border-radius:8px; padding:10px; background:#fafafa; margin-bottom:10px; }
+  .msg { margin:6px 0; padding:8px 12px; border-radius:10px; max-width:80%; font-size:14px; }
+  .msg.admin { background:#2563eb; color:#fff; margin-left:auto; }
+  .msg.buyer { background:#e5e7eb; color:#111; }
+  button { padding:8px 16px; border:none; border-radius:8px; background:#2563eb; color:#fff; cursor:pointer; }
+  .approve { background:#16a34a; } .reject { background:#dc2626; }
+  .empty { padding:40px; text-align:center; color:#999; }
+  .prod-row { padding:10px 16px; border-bottom:1px solid #f0f0f0; font-size:13px; }
+  .prod-row input, .prod-row select { margin:2px 4px; padding:4px; border:1px solid #ddd; border-radius:6px; }
+  .tabs button { background:#e5e7eb; color:#333; margin-right:6px; }
+  .tabs button.active { background:#2563eb; color:#fff; }
+</style>
+</head>
+<body>
+
+<div id="loginView" class="login">
+  <h3>Admin Login</h3>
+  <input id="u" placeholder="Username" style="width:100%;padding:10px;margin-bottom:10px;box-sizing:border-box">
+  <input id="p" type="password" placeholder="Password" style="width:100%;padding:10px;margin-bottom:10px;box-sizing:border-box">
+  <button onclick="login()" style="width:100%">Login</button>
+  <p id="loginMsg" style="color:red;font-size:13px"></p>
+</div>
+
+<div id="mainView" class="layout" style="display:none">
+  <div class="sidebar">
+    <div class="header">
+      <span>Applications</span>
+      <span class="tabs">
+        <button id="tabApps" class="active" onclick="switchTab('apps')">Apps</button>
+        <button id="tabProducts" onclick="switchTab('products')">Products</button>
+      </span>
+    </div>
+    <div id="appList"></div>
+    <div id="productList" style="display:none"></div>
+  </div>
+
+  <div class="main">
+    <div class="header">
+      <span id="chatTitle">Select an application</span>
+      <span id="reviewBtns"></span>
+    </div>
+    <div class="chat-area">
+      <div id="chatBox" class="chat-box"><div class="empty">Select an application to start chatting</div></div>
+      <div style="display:flex;gap:8px">
+        <input id="chatInput" placeholder="Type a message..." style="flex:1;padding:10px;border:1px solid #ddd;border-radius:8px">
+        <button onclick="sendMsg()">Send</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+let socket = null;
+let currentAppId = null;
+let applications = [];
+
+async function login() {
+  const res = await fetch('/api/admin/login', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ username: document.getElementById('u').value, password: document.getElementById('p').value })
+  });
+  if (res.ok) {
+    document.getElementById('loginView').style.display = 'none';
+    document.getElementById('mainView').style.display = 'flex';
+    init();
+  } else {
+    document.getElementById('loginMsg').textContent = 'Invalid username or password';
+  }
+}
+
+async function init() {
+  socket = io();
+  socket.on('message', m => {
+    if (m.application_id === currentAppId) appendMsg(m.sender, m.content);
+  });
+  loadApps();
+}
+
+async function loadApps() {
+  const res = await fetch('/api/admin/applications');
+  applications = await res.json();
+  const list = document.getElementById('appList');
+  list.innerHTML = '';
+  if (!applications.length) { list.innerHTML = '<div class="empty">No applications yet</div>'; return; }
+  applications.forEach(a => {
+    const div = document.createElement('div');
+    div.className = 'app-item' + (a.id === currentAppId ? ' active' : '');
+    div.innerHTML = `#${a.id} ${a.name} · ${a.country} · ${a.product_name}
+      <span class="badge ${a.status}">${{pending:'Pending',approved:'Approved',rejected:'Rejected'}[a.status]}</span>`;
+    div.onclick = () => openApp(a.id);
+    list.appendChild(div);
+  });
+}
+
+async function openApp(id) {
+  currentAppId = id;
+  document.querySelectorAll('.app-item').forEach(e => e.classList.remove('active'));
+  loadApps();
+  const app = applications.find(a => a.id === id);
+  document.getElementById('chatTitle').textContent = `#${id} ${app.name} · ${app.product_name}`;
+
+  const btns = document.getElementById('reviewBtns');
+  btns.innerHTML = app.status === 'pending'
+    ? `<button class="approve" onclick="review(${id},'approved')">Approve</button>
+       <button class="reject" onclick="review(${id},'rejected')">Reject</button>`
+    : '';
+
+  socket.emit('join', id);
+  const msgs = await (await fetch(`/api/admin/messages/${id}`)).json();
+  const box = document.getElementById('chatBox');
+  box.innerHTML = '';
+  msgs.forEach(m => appendMsg(m.sender, m.content));
+  if (!msgs.length) box.innerHTML = '<div class="empty">No messages</div>';
+}
+
+async function review(id, status) {
+  await fetch(`/api/admin/review/${id}`, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ status })
+  });
+  await loadApps();
+  openApp(id);
+}
+
+function appendMsg(sender, content) {
+  const box = document.getElementById('chatBox');
+  const div = document.createElement('div');
+  div.className = 'msg ' + sender;
+  div.textContent = (sender === 'admin' ? 'Me: ' : 'Buyer: ') + content;
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+}
+
+function sendMsg() {
+  const input = document.getElementById('chatInput');
+  const content = input.value.trim();
+  if (!content || !currentAppId) return;
+  socket.emit('message', { applicationId: currentAppId, sender: 'admin', content });
+  input.value = '';
+}
+
+async function switchTab(tab) {
+  document.getElementById('tabApps').classList.toggle('active', tab === 'apps');
+  document.getElementById('tabProducts').classList.toggle('active', tab === 'products');
+  document.getElementById('appList').style.display = tab === 'apps' ? 'block' : 'none';
+  document.getElementById('productList').style.display = tab === 'products' ? 'block' : 'none';
+  if (tab === 'products') loadProductsAdmin();
+}
+
+async function loadProductsAdmin() {
+  const products = await (await fetch('/api/admin/products')).json();
+  const box = document.getElementById('productList');
+  box.innerHTML = '';
+  products.forEach(p => {
+    let displayName = p.name;
+    if (p.name === '脱毛仪') displayName = 'Laser Hair Removal Device';
+    if (p.name === '美容仪') displayName = 'Facial Beauty Device';
+    if (p.name === '燃脂按摩仪') displayName = 'Fat Burning Massager';
+
+    const div = document.createElement('div');
+    div.className = 'prod-row';
+    div.innerHTML = `
+      <b>${displayName}</b><br>
+      Status:
+      <select id="s_${p.id}">
+        <option value="open" ${p.stock_status==='open'?'selected':''}>Open</option>
+        <option value="coming_soon" ${p.stock_status==='coming_soon'?'selected':''}>Coming Soon</option>
+        <option value="out_of_stock" ${p.stock_status==='out_of_stock'?'selected':''}>Out of Stock</option>
+      </select><br>
+      Allowed Countries: <input id="c_${p.id}" value="${p.allowed_countries}" style="width:120px">
+      <label><input type="checkbox" id="a_${p.id}" ${p.is_active?'checked':''}> Active</label>
+      <button onclick="saveProduct(${p.id})">Save</button>
+    `;
+    box.appendChild(div);
+  });
+}
+
+async function saveProduct(id) {
+  await fetch(`/api/admin/products/${id}`, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({
+      stock_status: document.getElementById('s_'+id).value,
+      allowed_countries: document.getElementById('c_'+id).value,
+      is_active: document.getElementById('a_'+id).checked
+    })
+  });
+  alert('Saved successfully');
+}
+</script>
+</body>
+</html>
