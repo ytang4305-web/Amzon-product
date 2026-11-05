@@ -11,7 +11,7 @@ const io = new Server(server);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public/public')));
 
 app.use(session({
   secret: 'my-super-secret-key-123',
